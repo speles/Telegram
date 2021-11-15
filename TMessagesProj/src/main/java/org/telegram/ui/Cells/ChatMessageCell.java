@@ -616,6 +616,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public long linkedChatId;
     public boolean isRepliesChat;
     public boolean isPinnedChat;
+    public boolean isNoForwardsChat;
     private boolean isPressed;
     private boolean forwardName;
     private boolean isHighlighted;
@@ -9606,6 +9607,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (!currentMessagesGroup.isDocuments && !currentPosition.last) {
                 return false;
             }
+        }
+        if (isNoForwardsChat) {
+            return false;
         }
         return messageObject.needDrawShareButton();
     }

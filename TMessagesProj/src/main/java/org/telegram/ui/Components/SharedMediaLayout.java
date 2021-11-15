@@ -386,6 +386,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
     public ImageView photoVideoOptionsItem;
     private ActionBarMenuItem forwardItem;
     private ActionBarMenuItem gotoItem;
+    private HintView noForwardsHintView;
     private int searchItemState;
     private Drawable pinnedHeaderShadowDrawable;
     private boolean ignoreSearchCollapse;
@@ -1432,6 +1433,15 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
             actionModeLayout.addView(forwardItem, new LinearLayout.LayoutParams(AndroidUtilities.dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
             actionModeViews.add(forwardItem);
             forwardItem.setOnClickListener(v -> onActionBarItemClick(forward));
+            forwardItem.setAlpha(1f);
+
+            if (!DialogObject.isUserDialog(dialog_id)) {
+                TLRPC.Chat currentChat = profileActivity.getMessagesController().getChat(-dialog_id);
+                if (currentChat.noforwards) {
+                    forwardItem.setOnClickListener(v -> showNoForwardsHint(currentChat));
+                    forwardItem.setAlpha(0.5f);
+                }
+            }
         }
         deleteItem = new ActionBarMenuItem(context, null, Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), false);
         deleteItem.setIcon(R.drawable.msg_delete);
@@ -3010,6 +3020,23 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         hasMedia[6] = count;
         updateTabs(true);
         checkCurrentTabValid();
+    }
+
+    public void showNoForwardsHint(TLRPC.Chat chat) {
+        if (noForwardsHintView == null) {
+            noForwardsHintView = new HintView(getContext(), 8, false);
+            noForwardsHintView.setAlpha(0.0f);
+            noForwardsHintView.setVisibility(View.INVISIBLE);
+            noForwardsHintView.setShowingDuration(3000);
+            profileActivity.getLayoutContainer().addView(noForwardsHintView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 19, 0, 19, 0));
+            if (ChatObject.isChannel(chat)) {
+                noForwardsHintView.setText(LocaleController.getString("ForwardsRestrictedHintChannel", R.string.ForwardsRestrictedHintChannel));
+            } else {
+                noForwardsHintView.setText(LocaleController.getString("ForwardsRestrictedHintGroup", R.string.ForwardsRestrictedHintGroup));
+            }
+        }
+        noForwardsHintView.setExtraTranslationY(AndroidUtilities.statusBarHeight);
+        noForwardsHintView.showForView(forwardItem, true);
     }
 
     public void onActionBarItemClick(int id) {

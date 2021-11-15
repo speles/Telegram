@@ -43,6 +43,7 @@ import org.telegram.ui.Cells.LoadingCell;
 import org.telegram.ui.Cells.RadioButtonCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.EditTextBoldCursor;
@@ -80,6 +81,12 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
     private TextInfoPrivacyCell infoCell;
     private TextSettingsCell textCell;
     private TextSettingsCell textCell2;
+
+    private LinearLayout noForwardsContainerLayout;
+    private HeaderCell noForwardsHeaderCell;
+    private TextCheckCell noForwardsTextCheckCell;
+    private TextInfoPrivacyCell noForwardsTextInfoCell;
+    private boolean isNoForwardsEnabled;
 
     private boolean isPrivate;
 
@@ -132,6 +139,7 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
             }
         }
         isPrivate = !isForcePublic && TextUtils.isEmpty(currentChat.username);
+        isNoForwardsEnabled = isPrivate && currentChat.noforwards;
         isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
         if (isForcePublic && TextUtils.isEmpty(currentChat.username) || isPrivate && currentChat.creator) {
             TLRPC.TL_channels_checkUsername req = new TLRPC.TL_channels_checkUsername();
@@ -399,6 +407,31 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         manageLinksInfoCell = new TextInfoPrivacyCell(context);
         linearLayout.addView(manageLinksInfoCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        noForwardsContainerLayout = new LinearLayout(context);
+        noForwardsContainerLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        noForwardsContainerLayout.setOrientation(LinearLayout.VERTICAL);
+        linearLayout.addView(noForwardsContainerLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        noForwardsHeaderCell = new HeaderCell(context, 23);
+        noForwardsHeaderCell.setText(LocaleController.getString("SavingContentHeader", R.string.SavingContentHeader));
+        noForwardsContainerLayout.addView(noForwardsHeaderCell);
+
+        noForwardsTextCheckCell = new TextCheckCell(context);
+        noForwardsTextCheckCell.setTextAndCheck(LocaleController.getString("SavingContentOption", R.string.SavingContentOption), isNoForwardsEnabled, false);
+        noForwardsTextCheckCell.setOnClickListener(v -> {
+            isNoForwardsEnabled = !isNoForwardsEnabled;
+            noForwardsTextCheckCell.setChecked(isNoForwardsEnabled);
+        });
+        noForwardsContainerLayout.addView(noForwardsTextCheckCell);
+
+        noForwardsTextInfoCell = new TextInfoPrivacyCell(context);
+        if (isChannel) {
+            noForwardsTextInfoCell.setText(LocaleController.getString("SavingContentDescriptionChannel", R.string.SavingContentDescriptionChannel));
+        } else {
+            noForwardsTextInfoCell.setText(LocaleController.getString("SavingContentDescriptionGroup", R.string.SavingContentDescriptionGroup));
+        }
+        linearLayout.addView(noForwardsTextInfoCell);
+
         if (!isPrivate && currentChat.username != null) {
             ignoreTextChanges = true;
             usernameTextView.setText(currentChat.username);
@@ -435,6 +468,9 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
 
     private void processDone() {
         if (trySetUsername()) {
+            if (isPrivate && currentChat.noforwards != isNoForwardsEnabled) {
+                getMessagesController().toggleChannelNoForwards(chatId, isNoForwardsEnabled, this);
+            }
             finishFragment();
         }
     }
@@ -593,6 +629,8 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         }
         radioButtonCell1.setChecked(!isPrivate, true);
         radioButtonCell2.setChecked(isPrivate, true);
+        noForwardsContainerLayout.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
+        noForwardsTextInfoCell.setVisibility(isPrivate ? View.VISIBLE : View.GONE);
         usernameTextView.clearFocus();
         checkDoneButton();
     }
@@ -814,6 +852,18 @@ public class ChatEditTypeActivity extends BaseFragment implements NotificationCe
         themeDescriptions.add(new ThemeDescription(manageLinksTextView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
         themeDescriptions.add(new ThemeDescription(manageLinksTextView, ThemeDescription.FLAG_TEXTCOLOR, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(manageLinksTextView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));
+
+        themeDescriptions.add(new ThemeDescription(noForwardsContainerLayout, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+
+        themeDescriptions.add(new ThemeDescription(noForwardsHeaderCell, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
+
+        themeDescriptions.add(new ThemeDescription(noForwardsTextCheckCell, 0, new Class[]{TextCheckCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
+        themeDescriptions.add(new ThemeDescription(noForwardsTextCheckCell, 0, new Class[]{TextCheckCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
+        themeDescriptions.add(new ThemeDescription(noForwardsTextCheckCell, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrack));
+        themeDescriptions.add(new ThemeDescription(noForwardsTextCheckCell, 0, new Class[]{TextCheckCell.class}, new String[]{"checkBox"}, null, null, null, Theme.key_switchTrackChecked));
+
+        themeDescriptions.add(new ThemeDescription(noForwardsTextInfoCell, ThemeDescription.FLAG_BACKGROUNDFILTER, new Class[]{TextInfoPrivacyCell.class}, null, null, null, Theme.key_windowBackgroundGrayShadow));
+        themeDescriptions.add(new ThemeDescription(noForwardsTextInfoCell, 0, new Class[]{TextInfoPrivacyCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText));
 
 
         return themeDescriptions;

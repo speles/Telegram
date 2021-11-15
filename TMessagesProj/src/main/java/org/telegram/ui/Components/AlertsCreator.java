@@ -234,6 +234,9 @@ public class AlertsCreator {
                 case "SCHEDULE_TOO_MUCH":
                     showSimpleToast(fragment, LocaleController.getString("MessageScheduledLimitReached", R.string.MessageScheduledLimitReached));
                     break;
+                case "CHAT_FORWARDS_RESTRICTED":
+                    showSimpleToast(fragment, LocaleController.getString("NoForwardsError", R.string.NoForwardsError));
+                    break;
             }
         } else if (request instanceof TLRPC.TL_messages_importChatInvite) {
             if (error.text.startsWith("FLOOD_WAIT")) {
@@ -351,6 +354,19 @@ public class AlertsCreator {
             switch (error.text) {
                 case "SHIPPING_NOT_AVAILABLE":
                     showSimpleToast(fragment, LocaleController.getString("PaymentNoShippingMethod", R.string.PaymentNoShippingMethod));
+                    break;
+                default:
+                    showSimpleToast(fragment, error.text);
+                    break;
+            }
+        } else if (request instanceof TLRPC.TL_messages_toggleNoForwards) {
+            switch (error.text) {
+                case "CHAT_NOT_MODIFIED":
+                    if (((TLRPC.TL_messages_toggleNoForwards) request).enabled) {
+                        showSimpleToast(fragment, LocaleController.getString("ToggleNoForwardsOnFailed", R.string.ToggleNoForwardsOnFailed));
+                    } else {
+                        showSimpleToast(fragment, LocaleController.getString("ToggleNoForwardsOffFailed", R.string.ToggleNoForwardsOffFailed));
+                    }
                     break;
                 default:
                     showSimpleToast(fragment, error.text);

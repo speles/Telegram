@@ -1004,7 +1004,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                 boolean infoWasEmpty = info == null;
                 info = chatFull;
                 historyHidden = !ChatObject.isChannel(currentChat) || info.hidden_prehistory;
-                updateFields(false);
+                updateFields(true);
                 if (infoWasEmpty) {
                     loadLinksCount();
                 }
@@ -1013,6 +1013,9 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             int mask = (Integer) args[0];
             if ((mask & MessagesController.UPDATE_MASK_AVATAR) != 0) {
                 setAvatar();
+            }
+            if ((mask & MessagesController.UPDATE_MASK_CHAT) != 0) {
+                updateFields(true);
             }
         }
     }
@@ -1344,9 +1347,17 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             } else {
                 String type;
                 if (isChannel) {
-                    type = isPrivate ? LocaleController.getString("TypePrivate", R.string.TypePrivate) : LocaleController.getString("TypePublic", R.string.TypePublic);
+                    if (isPrivate) {
+                        type = currentChat.noforwards ? LocaleController.getString("TypePrivateRestricted", R.string.TypePrivateRestricted) : LocaleController.getString("TypePrivate", R.string.TypePrivate);
+                    } else {
+                        type = LocaleController.getString("TypePublic", R.string.TypePublic);
+                    }
                 } else {
-                    type = isPrivate ? LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup) : LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
+                    if (isPrivate) {
+                        type = currentChat.noforwards ? LocaleController.getString("TypePrivateRestrictedGroup", R.string.TypePrivateRestrictedGroup) : LocaleController.getString("TypePrivateGroup", R.string.TypePrivateGroup);
+                    } else {
+                        type = LocaleController.getString("TypePublicGroup", R.string.TypePublicGroup);
+                    }
                 }
                 if (isChannel) {
                     typeCell.setTextAndValue(LocaleController.getString("ChannelType", R.string.ChannelType), type, historyCell != null && historyCell.getVisibility() == View.VISIBLE || linkedCell != null && linkedCell.getVisibility() == View.VISIBLE);
@@ -1443,6 +1454,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             if (info == null || !ChatObject.canUserDoAdminAction(currentChat, ChatObject.ACTION_INVITE) || (!isPrivate && currentChat.creator)) {
                 inviteLinksCell.setVisibility(View.GONE);
             } else {
+                inviteLinksCell.setVisibility(View.VISIBLE);
                 if (info.invitesCount > 0) {
                     inviteLinksCell.setTextAndValueAndIcon(LocaleController.getString("InviteLinks", R.string.InviteLinks), Integer.toString(info.invitesCount), R.drawable.actions_link, true);
                 } else {
